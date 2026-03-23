@@ -1,0 +1,88 @@
+<!-- 
+    Launch file for processing Fall 2025 single agent mission data with CORA and GTSAM estimators
+
+    from the catkin_ws/test directory, you can run this launch file to process a specific mission bag and generate results in the tests/results directory.
+    
+    for pink solo at specified timestamp, build catkin workspace and use terminal command:
+    source devel/setup.bash && roslaunch /home/lizgajski2/catkin_ws/tests/process_mission.launch mission_name:=pink_solo surface_timestamp:=1764048448.2902315
+    
+    Usage:
+    1. First, copy your desired mission bag to the tests directory with the mission name:
+       cp "Fall 2025 Single Agent Data/251124-2156F-SOUR-AXEL/LOG_SEASCOUT-01_24_11_2025_____21_56_32/actor_0_2025-11-25-02-56-40.bag" sour_axle.bag
+    
+    2. Run the launch file with the mission name:
+       roslaunch process_mission.launch mission_name:=sour_axle
+    
+    Available missions:
+    - sour_axle (251124-2156F-SOUR-AXEL)
+    - damp_beer (251124-2231S-DAMP-BEER)
+    - past_shep (251124-2244S-PAST-SHEP)
+    - pink_solo (251125-0010Q-PINK-SOLO)
+    - lush_erle (251125-0035J-LUSH-ERLE)
+-->
+
+<launch>
+    <!-- Mission name argument (default: sour_axle) -->
+    <arg name="mission_name" default="sour_axle" doc="Mission name (sour_axle, damp_beer, past_shep, pink_solo, or lush_erle)"/>
+    
+    <!-- Bag file path - assumes bag is copied to tests directory with mission name -->
+    <arg name="bag_file" default="/home/lizgajski2/catkin_ws/tests/$(arg mission_name).bag"/>
+    
+    <!-- Output directory for results -->
+    <arg name="output_dir" default="/home/lizgajski2/catkin_ws/tests/results/$(arg mission_name)"/>
+    
+    <!-- Estimator parameters -->
+    <arg name="dimension" default="3" doc="State space dimension (2 or 3)"/>
+    <arg name="playback_rate" default="10.0" doc="Bag playback speed multiplier (1.0=realtime, 10.0=10x faster)"/>
+    
+    <!-- Optional surface timestamp for filtering dive-only data -->
+    <!-- For pink_solo: use 1764048448.2902315 to filter to dive only -->
+    <arg name="surface_timestamp" default="" doc="Optional timestamp to filter data before surfacing"/>
+    
+    <!-- Landmark positions (from payload_lbl.launch) -->
+    <!-- CORRECTED: L0 at (-74.52, -38.93) NORTH of vehicle, L1 at (66.52, 25.97) even further NORTH -->
+    <rosparam param="landmarks">
+        L0: [-74.5193539608157, -38.9298973079931, -1.83]
+        L1: [66.5150726324041, 25.969767675496275, -1.83]
+    </rosparam>
+    
+    <!-- GTSAM Estimator -->
+    <node name="gtsam_estimator" pkg="spurdog_acomms" type="estimator_node.py" output="screen">
+        <param name="dimension" value="$(arg dimension)"/>
+        <param name="mode" value="GTSAM_LM"/>
+        <param name="agents" value="actor_0"/>
+        <param name="rate" value="1.0"/>
+        <param name="surface_timestamp" value="$(arg surface_timestamp)" if="$(eval surface_timestamp != '')"/>
+        <remap from="/range_factor" to="/actor_0/range_factor"/>
+        <remap from="/pose_factor" to="/actor_0/pose_factor"/>
+        <remap from="/estimator/pose" to="/gtsam_estimator/pose"/>
+    </node>
+    
+    <!-- CORA Estimator -->
+    <node name="cora_estimator" pkg="spurdog_acomms" type="estimator_node.py" output="screen">
+        <param name="dimension" value="$(arg dimension)"/>
+        <param name="mode" value="CORA"/>
+        <param name="agents" value="actor_0"/>
+        <param name="rate" value="1.0"/>
+        <param name="surface_timestamp" value="$(arg surface_timestamp)" if="$(eval surface_timestamp != '')"/>
+        <remap from="/range_factor" to="/actor_0/range_factor"/>
+        <remap from="/pose_factor" to="/actor_0/pose_factor"/>
+        <remap from="/estimator/pose" to="/cora_estimator/pose"/>
+    </node>
+    
+    <!-- Data processor and plotter -->
+    <node name="mission_processor" pkg="spurdog_acomms" type="mission_processor.py" output="screen">
+        <param name="mission_name" value="$(arg mission_name)"/>
+        <param name="output_dir" value="$(arg output_dir)"/>
+        <param name="dimension" value="$(arg dimension)"/>
+        <param name="surface_timestamp" value="$(arg surface_timestamp)" if="$(eval surface_timestamp != '')"/>
+    </node>
+    
+    <!-- Rosbag player (auto-play at specified rate) -->
+    <!-- NOT required so mission_processor can stay alive to collect final poses -->
+    <node pkg="rosbag" type="play" name="rosbag_player" 
+          args="--clock --rate=$(arg playback_rate) $(arg bag_file)" 
+          output="screen"/>
+
+    
+</launch>
