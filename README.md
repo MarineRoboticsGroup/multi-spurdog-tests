@@ -1,6 +1,6 @@
 # Multi-Spurdog Tests
 
-This repository contains test scripts and documentation for the Multi-Spurdog underwater SLAM project.
+This repository contains test scripts and documentation for the multi-spurdog experiments.
 
 ## Structure
 
