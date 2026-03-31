@@ -4,7 +4,7 @@ This repository contains test scripts and documentation for the Multi-Spurdog un
 
 ## Structure
 
-- **Root directory**: Documentation files (markdown) describing optimization studies, noise model tuning, and algorithm comparisons
+- **documentation/**: Markdown files describing optimization studies, noise model tuning, algorithm comparisons, and TDMA cycle operation
 - **tests/**: Test scripts and utilities for running GTSAM and CORA optimizers
 
 ## Documentation Files
@@ -16,6 +16,7 @@ This repository contains test scripts and documentation for the Multi-Spurdog un
 - `OPTIMIZER_COMPARISON.md` - Initial comparison findings
 - `SENSOR_NOISE_VERIFICATION.md` - Validation of noise parameters
 - `SUMMARY_GTSAM_FIX.md` - Bug fix documentation
+- `TDMA_CYCLE_EXPLANATION.md` - TDMA cycle and ranging protocol documentation
 
 ## Test Scripts
 
