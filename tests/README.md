@@ -38,17 +38,54 @@ python3 tests/offline_optimizer.py tests/pink_solo.bag --cutoff-time 1764048438.
 **Results Summary:**
 | Mission | Duration | GTSAM Error | CORA Error | Notes |
 |---------|----------|-------------|------------|-------|
-| pink_solo | 17.1min | 3.25m ✨ | 13.20m ✨ | Baseline |
-| past_shep | 14.9min | 3.36m ✨ | 11.65m ✨ | Best CORA |
-| lush_erle | 11.3min | 3.45m ✨ | 31.53m ⚠️ | CORA outlier |
-| sour_axle | 11.2min | 18.42m ⚠️ | 179.47m 😱 | Long GPS gap |
-| damp_beer | 5.9min | 18.19m ⚠️ | 108.75m 😱 | Short mission |
+| pink_solo | 17.1min | 3.25m | 13.20m | Baseline |
+| past_shep | 14.9min | 3.36m | 11.65m | Best CORA |
+| lush_erle | 11.3min | 3.45m | 31.53m | CORA outlier |
+| sour_axle | 11.2min | 18.42m | 179.47m | Long GPS gap |
+| damp_beer | 5.9min | 18.19m | 108.75m | Short mission |
 
 See `NOISE_MODEL_FINDINGS.md` for detailed analysis.
 
 ---
 
-## Online Processing (Real-time)
+## Directory Structure
+
+```
+tests/
+├── offline_optimizer.py           # Batch optimizer with validated noise models (RECOMMENDED)
+├── copy_mission_bags.sh          # Helper script to copy bags
+├── process_mission.launch         # Launch file for online/real-time processing
+├── README.md                      # This file
+├── validate_pose_factor.py       # Historical: IMU data validation script
+├── compare_cv7_logs.py           # Historical: CV7 log comparison script
+├── Fall 2025 Single Agent Data/  # Raw mission data
+├── results/                       # Generated results (created automatically)
+│   ├── sour_axle_offline/        # Offline optimizer results
+│   ├── damp_beer_offline/
+│   ├── past_shep_offline/
+│   ├── pink_solo_offline/
+│   ├── lush_erle_offline/
+│   ├── sour_axle/                # Online processor results (if used)
+│   └── ...
+└── *.bag                         # Copied mission bags
+```
+
+## Notes
+
+### Offline Optimizer
+- Processes complete mission data in batch mode
+- Uses validated noise models: GTSAM (σ=2m, 5rad), CORA (σ=0.316m, 0.1rad)
+- Automatically handles GPS selection and data trimming
+- Recommended for final analysis and results
+
+### Online Processor
+- Estimators run in real-time as the bag plays back
+- Bag playback rate can be adjusted: `roslaunch process_mission.launch mission_name:=pink_solo playback_rate:=10.0`
+- For faster processing, increase the rate (default is 10.0x realtime)
+- The mission processor automatically generates plots on shutdown (Ctrl+C)
+- Useful for testing incremental/online algorithms
+
+## Online Processing (Real-time) - NOT WORKING YET
 
 **For real-time processing during mission playback**, use the ROS launch file. This runs estimators incrementally as data arrives, simulating online operation.
 
@@ -143,39 +180,3 @@ source devel/setup.bash
 - CORA requires the CORA C++ library to be built. Check `/home/lizgajski2/catkin_ws/src/multi-spurdog/cora/build/`
 - GTSAM requires proper GTSAM installation (included with ROS noetic)
 
-## Directory Structure
-
-```
-tests/
-├── offline_optimizer.py           # Batch optimizer with validated noise models (RECOMMENDED)
-├── copy_mission_bags.sh          # Helper script to copy bags
-├── process_mission.launch         # Launch file for online/real-time processing
-├── README.md                      # This file
-├── validate_pose_factor.py       # Historical: IMU data validation script
-├── compare_cv7_logs.py           # Historical: CV7 log comparison script
-├── Fall 2025 Single Agent Data/  # Raw mission data
-├── results/                       # Generated results (created automatically)
-│   ├── sour_axle_offline/        # Offline optimizer results
-│   ├── damp_beer_offline/
-│   ├── past_shep_offline/
-│   ├── pink_solo_offline/
-│   ├── lush_erle_offline/
-│   ├── sour_axle/                # Online processor results (if used)
-│   └── ...
-└── *.bag                         # Copied mission bags
-```
-
-## Notes
-
-### Offline Optimizer
-- Processes complete mission data in batch mode
-- Uses validated noise models: GTSAM (σ=2m, 5rad), CORA (σ=0.316m, 0.1rad)
-- Automatically handles GPS selection and data trimming
-- Recommended for final analysis and results
-
-### Online Processor
-- Estimators run in real-time as the bag plays back
-- Bag playback rate can be adjusted: `roslaunch process_mission.launch mission_name:=pink_solo playback_rate:=10.0`
-- For faster processing, increase the rate (default is 10.0x realtime)
-- The mission processor automatically generates plots on shutdown (Ctrl+C)
-- Useful for testing incremental/online algorithms
